@@ -1,7 +1,17 @@
+mod field;
+
+use field::Field;
+
 fn main() {
-    println!("Hello, world!");
+    let x = 2 + 2;
+    let y = f(3).inv();
+    println!("Hello, world! {}", x);
+    println!("Field Addition {}", y);
 }
 
+fn f(v: u64) -> Field {
+    Field::new(v)
+}
 
 // To implement Groth 16
 //
