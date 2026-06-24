@@ -1,12 +1,17 @@
 mod field;
+mod poly;
 
 use field::Field;
+use poly::Poly;
 
 fn main() {
     let x = 2 + 2;
     let y = f(3).inv();
     println!("Hello, world! {}", x);
     println!("Field Addition {}", y);
+
+    let b = Poly(vec![f(3),f(4),f(5)]);
+    println!("This is {}", b);
 }
 
 fn f(v: u64) -> Field {

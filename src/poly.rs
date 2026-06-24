@@ -1,3 +1,7 @@
+use std::fmt;
+use std::ops::{Add, AddAssign, Mul, Sub};
+
+
 use crate::field::Field;
 // We think of a Polynomial as an array of numbers 
 // [1, 2, 3]
@@ -12,7 +16,7 @@ use crate::field::Field;
 //
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Poly(Vec<Field>);
+pub struct Poly(pub Vec<Field>);
 
 impl Poly {
 
@@ -67,6 +71,9 @@ impl Poly {
             return (Poly::zero(), self.clone());
         }
 
+        let mut quotient = vec![Field::ZERO; a_deg -b_deg + 1];
+        let mut remainder = self.0.clone();
+
         let leading_inv = divisor.0[b_deg].inv();
 
         for i in (0..=a_deg - b_deg).rev() {
@@ -86,4 +93,101 @@ impl Poly {
         (q_poly, r_poly)
 
     }
+
+    // (x, y)[] -> f(x) = y
+    // [(x1, y1), (x2, y2), ... , (xN, yN)]
+    pub fn lagrange_interpolate(points: &[(Field, Field)]) -> Self {
+        let n = points.len();
+        let mut result = Poly::zero();
+
+        for i in 0..n {
+            let (xi, yi) = points[i];
+            let mut numerator = Poly::one();
+            let mut denominator = Field::ONE;
+
+            for j in 0..n {
+                if i == j { continue; }
+                let (xj,_) = points[j];
+                numerator = numerator * Poly(vec![-xj, Field::ONE]);
+                denominator = denominator * (xi - xj);
+            }
+
+            let term = numerator * Poly::constant(yi * denominator.inv());
+            result = result + term;
+        }
+
+        result.trim()
+    }
 }
+
+impl Add for Poly {
+    type Output = Self;
+    fn add(self, rhs: Self) -> Self {
+        let len = std::cmp::max(self.0.len(), rhs.0.len());
+        let mut coeffs = vec![Field::ZERO; len];
+        for (i, c) in self.0.iter().enumerate() { coeffs[i] = coeffs[i] + *c; }
+        for (i, c) in rhs.0.iter().enumerate() { coeffs[i] = coeffs[i] + *c; }
+        Poly(coeffs).trim()
+    }
+}
+
+impl AddAssign for Poly {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = self.clone() + rhs;
+    }
+}
+
+impl Mul for Poly {
+    type Output = Self;
+    fn mul(self, rhs: Self) -> Self {
+        let len = self.0.len() + rhs.0.len();
+        let mut coeffs = vec![Field::ZERO; len];
+        for (i, a) in self.0.iter().enumerate() {
+            for (j, b) in rhs.0.iter().enumerate() {
+                coeffs[i + j] = coeffs[i + j] + *a * *b;
+            }
+        }
+        Poly(coeffs).trim()
+    }
+}
+
+impl Sub for Poly {
+    type Output = Self;
+    fn sub(self, rhs: Self) -> Self {
+        let len = std::cmp::max(self.0.len(), rhs.0.len());
+        let mut coeffs = vec![Field::ZERO; len];
+        for (i, c) in self.0.iter().enumerate() { coeffs[i] = coeffs[i] + *c; }
+        for (i, c) in rhs.0.iter().enumerate() { coeffs[i] = coeffs[i] - *c; }
+        Poly(coeffs).trim()
+    }
+}
+
+impl Mul<Field> for Poly {
+    type Output = Self;
+    fn mul(self, rhs: Field) -> Self {
+        Poly(self.0.iter().map(|c| *c * rhs).collect()).trim()
+    }
+}
+
+impl fmt::Display for Poly {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let d = self.degree();
+        if d == 0 {
+            return write!(f, "{}", self.0[0]);
+        }
+        for i in (0..=d).rev() {
+            let c = self.0[i];
+            if c.is_zero() { continue; }
+            if i < d { write!(f, " + ")?; }
+            if i == 0 { write!(f, "{}", c)?; }
+            else {
+                if c != Field::ONE { write!(f, "{}", c)?; }
+                write!(f, "x")?;
+                if i > 1 { write!(f, "^{}", i)?; }
+            }
+        }
+    Ok(())
+    }
+}
+
+

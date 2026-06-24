@@ -2,7 +2,7 @@ use std::fmt;
 use std::ops::{Add, AddAssign, Div, Mul, MulAssign, Sub, SubAssign, Neg}; 
 
 // Field (num)
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Field(u64);
 
 const MOD: u64 = 13;
