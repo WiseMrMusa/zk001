@@ -25,6 +25,17 @@ pub struct Proof {
     pub c: Field,
 }
 
+fn compute_f_tau(f_poly: &Poly, tau_powers: &[Field]) -> Field {
+    let coeffs = f_poly.coeffs();
+    let mut result = Field::ZERO;
+    for (i, c) in coeffs.iter().enumerate() {
+        if i < tau_powers.len() {
+            result = result + *c * tau_powers[i];
+        }
+    }
+    result
+}
+
 pub fn setup(qap: &QAP, rng: &mut impl FnMut() -> Field) -> CRS {
     let alpha = rng();
     let beta = rng();
@@ -79,7 +90,6 @@ pub fn setup(qap: &QAP, rng: &mut impl FnMut() -> Field) -> CRS {
         public_terms,
         private_terms,
         h_powers,
-        tau,
     }
 }
 
@@ -92,8 +102,8 @@ pub fn prove(crs: &CRS, qap: &QAP, witness: &[Field], r: Field, s: Field) -> Pro
     let mut c_sum = Field::ZERO;
 
     for i in 0..num_vars {
-        let ui = qap.u[i].eval(crs.tau);
-        let vi = qap.v[i].eval(crs.tau);
+        let ui = compute_f_tau(&qav.u[i], crs.tau_powers);
+        let vi = compute_f_tau(&qav.v[i], crs.tau_powers);
         u_sum = u_sum + ui * witness[i];
         v_sum = v_sum + vi * witness[i];
 
@@ -103,7 +113,7 @@ pub fn prove(crs: &CRS, qap: &QAP, witness: &[Field], r: Field, s: Field) -> Pro
     }
 
     let h_poly = qap.compute_h(witness);
-    let h_at_tau = h_poly.eval(crs.tau);
+    let h_at_tau = compute_f_tau(&h_poly, &crs.tau_powers);
     let h_term = h_at_tau * crs.h_powers[0] / crs.tau_powers[0];
 
 
