@@ -114,3 +114,19 @@ pub fn prove(crs: &CRS, qap: &QAP, witness: &[Field], r: Field, s: Field) -> Pro
 
     Proof { a, b, c } 
 }
+
+pub fn verify (crs: &CRS, qap: &QAP, public_inputs: &[Field], proof: &Proof) -> bool {
+    assert_eq!(public_inputs.len(), qap.num_pub);
+
+    let mut public_sum = Field::ZERO;
+    for i in 0..qap.num_pub {
+        public_sum = public_sum + public_inputs[i] * crs.public_terms[i];
+    }
+
+    let lhs = proof.a * proof.b;
+    let rhs = crs.alpha * crs.beta 
+        + public_sum * crs.gamma
+        + proof.c * crs.delta;
+
+    lhs == rhs
+}
